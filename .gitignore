@@ -12,6 +12,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# But allow static/lib/ for Live2D libraries
+!static/lib/
 parts/
 sdist/
 var/

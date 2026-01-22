@@ -71,25 +71,207 @@ class AIStreamer {
                 antialias: true,
             });
 
-            // Load Live2D model
-            // Note: You need to provide a Live2D model file (.model3.json)
-            // For demo purposes, we'll create a placeholder
-            this.updateStatus('live2d', 'ready', 'Live2D 就绪（需要模型文件）');
+            // Create placeholder text while loading
+            const placeholderText = new PIXI.Text('数字人模型加载中...', {
+                fontFamily: 'Arial',
+                fontSize: 24,
+                fill: 0xffffff,
+                align: 'center',
+            });
+            placeholderText.anchor.set(0.5);
+            placeholderText.x = this.app.screen.width / 2;
+            placeholderText.y = this.app.screen.height / 2;
+            this.app.stage.addChild(placeholderText);
+
+            // Try to load Live2D model
+            // Option 1: Use a test model URL (if available)
+            // Option 2: Load from local path
+            const modelPath = this.getModelPath();
             
-            // If you have a Live2D model, uncomment and configure:
-            /*
-            const { Live2DModel } = PIXI.live2d.display;
-            this.model = await Live2DModel.from('path/to/your/model.model3.json');
-            this.app.stage.addChild(this.model);
-            this.model.scale.set(0.5);
-            this.model.x = this.app.screen.width / 2;
-            this.model.y = this.app.screen.height / 2;
-            */
+            if (modelPath) {
+                try {
+                    // Wait longer for the library to fully load and initialize
+                    // Both index.js and cubism4.js need time to set up all exports
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    
+                    // Try different ways to access Live2DModel (compatibility with different CDN versions)
+                    let Live2DModel = null;
+                    
+                    // Debug: Check what's available
+                    console.log('🔍 Searching for Live2DModel...');
+                    console.log('PIXI:', typeof PIXI !== 'undefined' ? 'loaded' : 'not loaded');
+                    console.log('PIXI.live2d:', PIXI.live2d);
+                    
+                    // Method 1: PIXI.live2d.display.Live2DModel
+                    if (PIXI.live2d && PIXI.live2d.display && PIXI.live2d.display.Live2DModel) {
+                        Live2DModel = PIXI.live2d.display.Live2DModel;
+                        console.log('✅ Using PIXI.live2d.display.Live2DModel');
+                    }
+                    // Method 2: PIXI.live2d.Live2DModel (this should be the correct location)
+                    else if (PIXI.live2d && PIXI.live2d.Live2DModel) {
+                        Live2DModel = PIXI.live2d.Live2DModel;
+                        console.log('✅ Using PIXI.live2d.Live2DModel');
+                        // Also create display namespace for consistency
+                        if (!PIXI.live2d.display) {
+                            PIXI.live2d.display = {};
+                        }
+                        PIXI.live2d.display.Live2DModel = Live2DModel;
+                    }
+                    // Method 2b: Check for Live2DFactory (might contain the model class)
+                    else if (PIXI.live2d && PIXI.live2d.Live2DFactory) {
+                        console.log('Found Live2DFactory, checking for Model class...');
+                        // Live2DFactory might be a factory that creates models
+                        // Check if it has a static method or property
+                        if (PIXI.live2d.Live2DFactory.Model) {
+                            Live2DModel = PIXI.live2d.Live2DFactory.Model;
+                            console.log('✅ Using PIXI.live2d.Live2DFactory.Model');
+                        } else if (typeof PIXI.live2d.Live2DFactory === 'function' && PIXI.live2d.Live2DFactory.from) {
+                            // Live2DFactory itself might be the model class
+                            Live2DModel = PIXI.live2d.Live2DFactory;
+                            console.log('✅ Using PIXI.live2d.Live2DFactory as Live2DModel');
+                        }
+                    }
+                    // Method 3: Check window object
+                    else if (window.PIXI && window.PIXI.live2d) {
+                        const live2d = window.PIXI.live2d;
+                        if (live2d.display && live2d.display.Live2DModel) {
+                            Live2DModel = live2d.display.Live2DModel;
+                            console.log('✅ Using window.PIXI.live2d.display.Live2DModel');
+                        } else if (live2d.Live2DModel) {
+                            Live2DModel = live2d.Live2DModel;
+                            console.log('✅ Using window.PIXI.live2d.Live2DModel');
+                        }
+                    }
+                    // Method 4: Check if it's directly on PIXI.live2d (might be a function)
+                    else if (PIXI.live2d && typeof PIXI.live2d.Live2DModel === 'function') {
+                        Live2DModel = PIXI.live2d.Live2DModel;
+                        console.log('✅ Using PIXI.live2d.Live2DModel (function)');
+                    }
+                    // Method 5: Check global scope
+                    else if (typeof window.Live2DModel !== 'undefined') {
+                        Live2DModel = window.Live2DModel;
+                        console.log('✅ Using global Live2DModel');
+                    }
+                    // Method 6: Check if the library exports it differently
+                    else if (PIXI.live2d && PIXI.live2d.models) {
+                        if (PIXI.live2d.models.Live2DModel) {
+                            Live2DModel = PIXI.live2d.models.Live2DModel;
+                            console.log('✅ Using PIXI.live2d.models.Live2DModel');
+                        }
+                    }
+                    
+                    if (!Live2DModel) {
+                        // Last attempt: wait a bit more and check again, also check all PIXI.live2d properties
+                        console.warn('⚠️ Live2DModel not found, waiting 500ms and retrying...');
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        // Try all possible locations again
+                        if (PIXI.live2d && PIXI.live2d.display && PIXI.live2d.display.Live2DModel) {
+                            Live2DModel = PIXI.live2d.display.Live2DModel;
+                        } else if (PIXI.live2d && PIXI.live2d.Live2DModel) {
+                            Live2DModel = PIXI.live2d.Live2DModel;
+                        } else if (PIXI.live2d && typeof PIXI.live2d.Live2DModel === 'function') {
+                            Live2DModel = PIXI.live2d.Live2DModel;
+                        }
+                        
+                        // If still not found, try to find any function that might be the model loader
+                        if (!Live2DModel && PIXI.live2d) {
+                            for (let key in PIXI.live2d) {
+                                const value = PIXI.live2d[key];
+                                if (typeof value === 'function' && value.name && value.name.includes('Model')) {
+                                    console.log('Found potential model loader:', key, value);
+                                    // Check if it has a 'from' method (common pattern)
+                                    if (value.from || value.load) {
+                                        Live2DModel = value;
+                                        console.log('✅ Using', key, 'as Live2DModel');
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Also check window and PIXI directly
+                        if (!Live2DModel) {
+                            if (typeof window.Live2DModel !== 'undefined') {
+                                Live2DModel = window.Live2DModel;
+                                console.log('✅ Found window.Live2DModel');
+                            } else if (typeof PIXI.Live2DModel !== 'undefined') {
+                                Live2DModel = PIXI.Live2DModel;
+                                console.log('✅ Found PIXI.Live2DModel');
+                            }
+                        }
+                    }
+                    
+                    if (!Live2DModel) {
+                        // Final attempt: check if the library exports it in a different way
+                        // Some versions might require accessing it through a factory function
+                        console.error('❌ Live2DModel not found after all attempts');
+                        console.error('Library structure:', {
+                            'PIXI.live2d': PIXI.live2d,
+                            'PIXI.live2d keys': PIXI.live2d ? Object.keys(PIXI.live2d) : 'N/A',
+                            'window.Live2DModel': typeof window.Live2DModel,
+                            'PIXI.Live2DModel': typeof PIXI.Live2DModel
+                        });
+                        throw new Error('Live2DModel not found. The pixi-live2d-display library may not be exporting correctly. Please check: 1) Library version compatibility, 2) Try using a local copy of the library, 3) Check if you need to import from a different build file.');
+                    }
+                    
+                    console.log('📦 Loading Live2D model from:', modelPath);
+                    console.log('Live2DModel type:', typeof Live2DModel);
+                    
+                    this.model = await Live2DModel.from(modelPath);
+                    this.app.stage.removeChild(placeholderText);
+                    this.app.stage.addChild(this.model);
+                    
+                    // Center and scale the model
+                    this.model.scale.set(0.5);
+                    this.model.x = this.app.screen.width / 2;
+                    this.model.y = this.app.screen.height / 2;
+                    
+                    this.updateStatus('live2d', 'ready', 'Live2D 模型已加载');
+                    console.log('Live2D model loaded successfully');
+                } catch (modelError) {
+                    console.error('Failed to load Live2D model:', modelError);
+                    placeholderText.text = `模型加载失败\n${modelError.message}`;
+                    this.updateStatus('live2d', 'error', 'Live2D 模型加载失败: ' + modelError.message);
+                }
+            } else {
+                placeholderText.text = '未配置 Live2D 模型\n请查看控制台说明';
+                this.updateStatus('live2d', 'warning', 'Live2D 模型未配置');
+                console.log('Live2D model path not configured. To load a model:');
+                console.log('1. Download a Live2D model (.model3.json file)');
+                console.log('2. Place it in the static/models/ directory');
+                console.log('3. Update getModelPath() method in app.js');
+            }
             
         } catch (error) {
             console.error('Failed to setup Live2D:', error);
             this.showError('Live2D 初始化失败: ' + error.message);
         }
+    }
+
+    getModelPath() {
+        // Method to get Live2D model path
+        // You can configure this to point to your model file
+        
+        // Option 1: Use a test model from CDN (if available)
+        // return 'https://cdn.example.com/models/test.model3.json';
+        
+        // Option 2: Use local model file
+        // Place your .model3.json file in static/models/ directory
+        // return '/static/models/your-model.model3.json';
+        
+        // Option 3: Check for model in common locations
+        const possiblePaths = [
+            '/static/models/model.model3.json',
+            '/static/models/character.model3.json',
+            '/models/model.model3.json',
+        ];
+        
+        // For now, return null to show placeholder
+        // Uncomment and set the path when you have a model:
+        // return '/static/models/your-model.model3.json';
+        
+        return '/static/models/shizuku/shizuku.model.json';
     }
 
     async startStream(topic) {

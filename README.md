@@ -107,6 +107,32 @@ ai-streamer-demo/
 
 ### Live2D 模型配置
 
+**重要：** 页面需要 Live2D 模型文件才能显示数字人。
+
+#### 方式 1: 使用测试模型（快速体验）
+
+1. 下载一个免费的 Live2D 测试模型（.model3.json 格式）
+2. 将模型文件放到 `static/models/` 目录
+3. 在 `static/app.js` 中修改 `getModelPath()` 方法，返回模型路径：
+
+```javascript
+getModelPath() {
+    return '/static/models/your-model.model3.json';
+}
+```
+
+#### 方式 2: 使用占位符（当前默认）
+
+如果没有模型文件，页面会显示占位符文本。功能仍然可以正常使用（音频播放、WebSocket 连接等），只是没有数字人动画。
+
+#### 获取 Live2D 模型
+
+- **官方示例模型**: 访问 [Live2D Cubism SDK](https://www.live2d.com/sdk/download/cubism-sdk/) 下载示例模型
+- **免费模型**: 搜索 "Live2D free model" 或访问相关社区
+- **商业模型**: 从 Live2D 官方商店购买
+
+**注意**: 确保模型文件是 `.model3.json` 格式（Cubism 3.0+），并包含所有相关的纹理和动作文件。
+
 当前前端已集成 `pixi-live2d-display`，但需要提供 Live2D 模型文件（.model3.json）才能显示数字人。
 
 要使用 Live2D 模型：
