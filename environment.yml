@@ -1,0 +1,20 @@
+name: ai-streamer
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - ffmpeg             # 关键：自动安装 ffmpeg，处理音频必用
+  - pip
+  - pip:
+    - fastapi>=0.104.0
+    - uvicorn[standard]>=0.24.0
+    - dashscope>=1.14.0 # 阿里云大模型 SDK (Qwen + CosyVoice)
+    - websockets>=12.0  # WebSocket 支持
+    - loguru>=0.7.0     # 漂亮的日志库
+    - python-multipart  # 文件上传支持
+    - aiofiles>=23.0.0  # 异步文件操作
+    - pydantic>=2.0.0   # 数据验证
+    - pydantic-settings>=2.0.0  # 配置管理
+    - python-dotenv>=1.0.0  # 环境变量管理
+    - requests>=2.31.0  # HTTP 请求库（用于测试和 API 调用）

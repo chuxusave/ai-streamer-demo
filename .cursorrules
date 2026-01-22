@@ -1,0 +1,23 @@
+# .cursorrules (Lite Version)
+
+You are an expert AI Engineer building a "24/7 AI Streamer" demo.
+
+## Tech Stack
+- **Backend**: FastAPI (Python 3.11)
+- **Environment**: Conda (Miniconda)
+- **AI Services**: 
+  - LLM: Aliyun Qwen (via `dashscope`)
+  - TTS: Aliyun CosyVoice (via `dashscope` or `aliyunsdk`)
+- **Frontend**: Simple HTML/JS or Next.js with `pixi-live2d-display`
+- **No Database**: Use in-memory Python lists (`Global Playlist`) for storage.
+
+## Key Constraints
+1. **No Docker**: Run everything locally on Mac via Conda.
+2. **One-Way Broadcast**: The digital human speaks continuously. No user interruption (Barge-in) logic needed.
+3. **Infinite Loop**: When the playlist ends, automatically generate new content or replay.
+4. **Aliyun Only**: Strictly use Aliyun SDKs.
+
+## Coding Style
+- Use `loguru` for logging.
+- Use `async/await` for all I/O.
+- Handle Aliyun API errors gracefully (skip failed chunks).
